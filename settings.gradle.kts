@@ -21,5 +21,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "localgrok"
-include(":app")
 
+include(
+    ":app"
+)

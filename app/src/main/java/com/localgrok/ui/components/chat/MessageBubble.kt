@@ -56,46 +56,38 @@ import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import com.mikepenz.markdown.m3.markdownTypography
 
-/**
- * Response status for AI message bubbles
- */
 enum class ResponseStatus {
-    THINKING,   // Model is in reasoning/thinking phase
-    STREAMING,  // Model is streaming content tokens
-    COMPLETE    // Response is complete
+    THINKING,
+    STREAMING,
+    COMPLETE,
 }
 
 @Composable
-fun UserMessageBubble(
-    message: MessageEntity,
-    modifier: Modifier = Modifier
-) {
+fun UserMessageBubble(message: MessageEntity, modifier: Modifier = Modifier) {
     val colors = LocalAppColors.current
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End
-    ) {
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         Box(
-            modifier = Modifier
-                .widthIn(max = 300.dp)
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 4.dp,
-                        bottomStart = 16.dp,
-                        bottomEnd = 16.dp
+            modifier =
+                Modifier.widthIn(max = 300.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 4.dp,
+                            bottomStart = 16.dp,
+                            bottomEnd = 16.dp,
+                        )
                     )
-                )
-                .background(colors.userBubble)
-                .padding(14.dp)
+                    .background(colors.userBubble)
+                    .padding(14.dp)
         ) {
             Text(
                 text = message.content,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = InterFont,
-                    fontSize = 16.sp
-                ),
-                color = colors.textPrimary
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontFamily = InterFont,
+                        fontSize = 16.sp,
+                    ),
+                color = colors.textPrimary,
             )
         }
     }
@@ -108,90 +100,76 @@ fun AssistantMessageBubble(
     isReasoningEnabled: Boolean = true,
     isExecutingTool: Boolean = false,
     toolDisplayName: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val colors = LocalAppColors.current
 
-    // Derive the response status from message state
-    val responseStatus by remember(message.isStreaming, message.isThinking, message.content) {
-        derivedStateOf {
-            when {
-                message.isThinking -> ResponseStatus.THINKING
-                message.isStreaming -> ResponseStatus.STREAMING
-                else -> ResponseStatus.COMPLETE
+    val responseStatus by
+        remember(message.isStreaming, message.isThinking, message.content) {
+            derivedStateOf {
+                when {
+                    message.isThinking -> ResponseStatus.THINKING
+                    message.isStreaming -> ResponseStatus.STREAMING
+                    else -> ResponseStatus.COMPLETE
+                }
             }
         }
+
+    var previousStatus by remember { mutableStateOf(responseStatus) }
+    var showThinkingIndicator by remember {
+        mutableStateOf(responseStatus == ResponseStatus.THINKING)
     }
 
-    // Track previous status to detect transitions for animation
-    var previousStatus by remember { mutableStateOf(responseStatus) }
-    var showThinkingIndicator by remember { mutableStateOf(responseStatus == ResponseStatus.THINKING) }
-
-    // State for expanding/collapsing reasoning content
     var isReasoningExpanded by remember { mutableStateOf(false) }
 
-    // Handle status transitions
     LaunchedEffect(responseStatus) {
         when {
-            // Entering thinking state
             responseStatus == ResponseStatus.THINKING -> {
                 showThinkingIndicator = true
             }
-            // Transitioning from thinking to streaming/complete
-            previousStatus == ResponseStatus.THINKING && responseStatus != ResponseStatus.THINKING -> {
+
+            previousStatus == ResponseStatus.THINKING &&
+                responseStatus != ResponseStatus.THINKING -> {
                 showThinkingIndicator = false
             }
         }
         previousStatus = responseStatus
     }
 
-    // Close reasoning dropdown when tool execution starts
-    // This ensures it stays closed after search completes
     LaunchedEffect(isExecutingTool) {
         if (isExecutingTool) {
             isReasoningExpanded = false
         }
     }
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start
-    ) {
-        // Clean text display - no container, no border, no background
-        Column(
-            modifier = Modifier.widthIn(max = 340.dp)
-        ) {
-            // Helper function to detect tool artifacts in content
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Column(modifier = Modifier.widthIn(max = 340.dp)) {
             fun containsToolArtifacts(content: String): Boolean {
                 return content.contains("<tool_result>", ignoreCase = true) ||
-                        content.contains("</tool_result>", ignoreCase = true) ||
-                        content.contains("<tool_call>", ignoreCase = true) ||
-                        content.contains("</tool_call>", ignoreCase = true) ||
-                        content.contains("Search results:", ignoreCase = true) ||
-                        content.contains("Current date and time:", ignoreCase = true)
+                    content.contains("</tool_result>", ignoreCase = true) ||
+                    content.contains("<tool_call>", ignoreCase = true) ||
+                    content.contains("</tool_call>", ignoreCase = true) ||
+                    content.contains("Search results:", ignoreCase = true) ||
+                    content.contains("Current date and time:", ignoreCase = true)
             }
 
             val persistedToolUsed = message.toolUsed
             val persistedToolDisplayName = message.toolDisplayName.takeIf { it.isNotBlank() }
 
-            // Detect if a tool was used based on explicit execution flags or message content.
-            // We intentionally ignore reasoning content here because models may "think aloud"
-            // about possible tool calls without actually executing them, which would otherwise
-            // create false positives for the tool status indicator.
-            val toolWasUsed = remember(
-                message.content,
-                toolDisplayName,
-                persistedToolUsed,
-                persistedToolDisplayName
-            ) {
-                toolDisplayName != null ||
+            val toolWasUsed =
+                remember(
+                    message.content,
+                    toolDisplayName,
+                    persistedToolUsed,
+                    persistedToolDisplayName,
+                ) {
+                    toolDisplayName != null ||
                         persistedToolUsed ||
                         persistedToolDisplayName != null ||
                         containsToolArtifacts(message.content)
-            }
+                }
 
-            // Determine which tool was used from content or displayName
             val detectedToolName =
                 remember(message.content, toolDisplayName, persistedToolDisplayName) {
                     val displayName = toolDisplayName ?: persistedToolDisplayName
@@ -199,79 +177,73 @@ fun AssistantMessageBubble(
                         displayName != null -> displayName
                         toolWasUsed -> "Completed"
                         message.content.contains("Search results:", ignoreCase = true) ||
-                                message.content.contains("<tool_result>", ignoreCase = true) &&
+                            message.content.contains("<tool_result>", ignoreCase = true) &&
                                 (message.content.contains("Search", ignoreCase = true) ||
-                                        message.content.contains(
-                                            "web",
-                                            ignoreCase = true
-                                        )) -> "Searching..."
+                                    message.content.contains("web", ignoreCase = true)) ->
+                            "Searching..."
 
                         message.content.contains("Current date and time:", ignoreCase = true) ||
-                                (message.content.contains("<tool_result>", ignoreCase = true) &&
-                                        (message.content.contains("time", ignoreCase = true) ||
-                                                message.content.contains(
-                                                    "date",
-                                                    ignoreCase = true
-                                                ) ||
-                                                message.content.contains(
-                                                    "calendar",
-                                                    ignoreCase = true
-                                                ))) -> "Checking time..."
+                            (message.content.contains("<tool_result>", ignoreCase = true) &&
+                                (message.content.contains("time", ignoreCase = true) ||
+                                    message.content.contains("date", ignoreCase = true) ||
+                                    message.content.contains("calendar", ignoreCase = true))) ->
+                            "Checking time..."
 
                         else -> null
                     }
                 }
 
-            // Tool execution indicator - shown when executing or when completed
             if (isExecutingTool && responseStatus != ResponseStatus.STREAMING) {
-                // Active tool execution (but not streaming content yet)
+
                 ToolExecutionIndicator(
                     displayText = toolDisplayName ?: "Working...",
                     isCompleted = false,
-                    colors = colors
+                    colors = colors,
                 )
-                // Don't show anything else while tool is executing (unless streaming)
+
                 return@Row
             } else if (isExecutingTool && responseStatus == ResponseStatus.STREAMING) {
-                // Tool is executing AND content is streaming - show both
+
                 ToolExecutionIndicator(
                     displayText = toolDisplayName ?: "Working...",
                     isCompleted = false,
-                    colors = colors
+                    colors = colors,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-            } else if (toolWasUsed && responseStatus == ResponseStatus.STREAMING && !isExecutingTool && (toolDisplayName != null || detectedToolName != null)) {
-                // Tool was used, content is streaming, but tool execution is complete - show past tense
+            } else if (
+                toolWasUsed &&
+                    responseStatus == ResponseStatus.STREAMING &&
+                    !isExecutingTool &&
+                    (toolDisplayName != null || detectedToolName != null)
+            ) {
+
                 ToolExecutionIndicator(
                     displayText = toolDisplayName ?: detectedToolName ?: "Completed",
                     isCompleted = true,
-                    colors = colors
+                    colors = colors,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-            } else if (toolWasUsed && responseStatus == ResponseStatus.COMPLETE && detectedToolName != null) {
-                // Completed tool execution - show past tense
+            } else if (
+                toolWasUsed && responseStatus == ResponseStatus.COMPLETE && detectedToolName != null
+            ) {
+
                 ToolExecutionIndicator(
                     displayText = detectedToolName,
                     isCompleted = true,
-                    colors = colors
+                    colors = colors,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Thinking indicator - clickable to expand reasoning
-            // Logic flow:
-            // 1. If actively thinking, always show "Thinking..." (regardless of tool usage)
-            // 2. If complete and tool was used, don't show "Thought" (tool status takes priority)
-            // 3. If complete and no tool was used but has reasoning, show "Thought"
             val hasReasoning = reasoningContent.isNotBlank()
-            val showThinkingSection = when {
-                // Always show when actively thinking
-                showThinkingIndicator -> true
-                // When complete: only show if no tool was used and there's reasoning content
-                responseStatus == ResponseStatus.COMPLETE -> hasReasoning && !toolWasUsed
-                // Otherwise don't show
-                else -> false
-            }
+            val showThinkingSection =
+                when {
+                    showThinkingIndicator -> true
+
+                    responseStatus == ResponseStatus.COMPLETE -> hasReasoning && !toolWasUsed
+
+                    else -> false
+                }
 
             if (showThinkingSection) {
                 CollapsibleThinkingSection(
@@ -280,129 +252,140 @@ fun AssistantMessageBubble(
                     messageContent = message.content,
                     isExpanded = isReasoningExpanded,
                     onToggleExpanded = { isReasoningExpanded = !isReasoningExpanded },
-                    colors = colors
+                    colors = colors,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Show pulsing dot when waiting for first token (non-thinking mode)
-            val showLoadingSpinner = !isReasoningEnabled &&
+            val showLoadingSpinner =
+                !isReasoningEnabled &&
                     message.content.isBlank() &&
                     responseStatus == ResponseStatus.STREAMING &&
                     !showThinkingIndicator
 
             if (showLoadingSpinner) {
                 val infiniteTransition = rememberInfiniteTransition(label = "loading_pulse")
-                val scale by infiniteTransition.animateFloat(
-                    initialValue = 0.8f,
-                    targetValue = 1.2f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(600, easing = LinearEasing),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "pulse_scale"
-                )
+                val scale by
+                    infiniteTransition.animateFloat(
+                        initialValue = 0.8f,
+                        targetValue = 1.2f,
+                        animationSpec =
+                            infiniteRepeatable(
+                                animation = tween(600, easing = LinearEasing),
+                                repeatMode = RepeatMode.Reverse,
+                            ),
+                        label = "pulse_scale",
+                    )
 
                 Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        }
-                        .background(
-                            color = colors.textPrimary,
-                            shape = CircleShape
-                        )
+                    modifier =
+                        Modifier.size(12.dp)
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                            }
+                            .background(color = colors.textPrimary, shape = CircleShape)
                 )
             }
 
-            // Actual content with streaming text (no animation, direct display)
-            // Always render Markdown to prevent reveal effect from conditional appearance
             if (!showThinkingIndicator) {
                 Markdown(
                     content = message.content,
-                    colors = markdownColor(
-                        text = colors.textPrimary,
-                        codeText = colors.textPrimary,
-                        codeBackground = colors.darkGrey,
-                        linkText = colors.accent,
-                        inlineCodeText = colors.textPrimary,
-                        inlineCodeBackground = colors.darkGrey,
-                        dividerColor = Color.Transparent
-                    ),
-                    typography = markdownTypography(
-                        h1 = MaterialTheme.typography.headlineMedium.copy(
-                            fontFamily = InterFont,
-                            color = colors.textPrimary
+                    colors =
+                        markdownColor(
+                            text = colors.textPrimary,
+                            codeText = colors.textPrimary,
+                            codeBackground = colors.darkGrey,
+                            linkText = colors.accent,
+                            inlineCodeText = colors.textPrimary,
+                            inlineCodeBackground = colors.darkGrey,
+                            dividerColor = Color.Transparent,
                         ),
-                        h2 = MaterialTheme.typography.headlineSmall.copy(
-                            fontFamily = InterFont,
-                            color = colors.textPrimary
+                    typography =
+                        markdownTypography(
+                            h1 =
+                                MaterialTheme.typography.headlineMedium.copy(
+                                    fontFamily = InterFont,
+                                    color = colors.textPrimary,
+                                ),
+                            h2 =
+                                MaterialTheme.typography.headlineSmall.copy(
+                                    fontFamily = InterFont,
+                                    color = colors.textPrimary,
+                                ),
+                            h3 =
+                                MaterialTheme.typography.titleLarge.copy(
+                                    fontFamily = InterFont,
+                                    color = colors.textPrimary,
+                                ),
+                            h4 =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontFamily = InterFont,
+                                    color = colors.textPrimary,
+                                ),
+                            h5 =
+                                MaterialTheme.typography.titleSmall.copy(
+                                    fontFamily = InterFont,
+                                    color = colors.textPrimary,
+                                ),
+                            h6 =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    fontFamily = InterFont,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textPrimary,
+                                ),
+                            text =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFont,
+                                    fontSize = 16.sp,
+                                    color = colors.textPrimary,
+                                ),
+                            code =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 14.sp,
+                                    color = colors.textPrimary,
+                                ),
+                            quote =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFont,
+                                    fontStyle = FontStyle.Italic,
+                                    color = colors.textSecondary,
+                                ),
+                            paragraph =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFont,
+                                    fontSize = 16.sp,
+                                    color = colors.textPrimary,
+                                ),
+                            ordered =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFont,
+                                    fontSize = 16.sp,
+                                    color = colors.textPrimary,
+                                ),
+                            bullet =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFont,
+                                    fontSize = 16.sp,
+                                    color = colors.textPrimary,
+                                ),
+                            list =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = InterFont,
+                                    fontSize = 16.sp,
+                                    color = colors.textPrimary,
+                                ),
                         ),
-                        h3 = MaterialTheme.typography.titleLarge.copy(
-                            fontFamily = InterFont,
-                            color = colors.textPrimary
-                        ),
-                        h4 = MaterialTheme.typography.titleMedium.copy(
-                            fontFamily = InterFont,
-                            color = colors.textPrimary
-                        ),
-                        h5 = MaterialTheme.typography.titleSmall.copy(
-                            fontFamily = InterFont,
-                            color = colors.textPrimary
-                        ),
-                        h6 = MaterialTheme.typography.bodyLarge.copy(
-                            fontFamily = InterFont,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.textPrimary
-                        ),
-                        text = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            color = colors.textPrimary
-                        ),
-                        code = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp,
-                            color = colors.textPrimary
-                        ),
-                        quote = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFont,
-                            fontStyle = FontStyle.Italic,
-                            color = colors.textSecondary
-                        ),
-                        paragraph = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            color = colors.textPrimary
-                        ),
-                        ordered = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            color = colors.textPrimary
-                        ),
-                        bullet = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            color = colors.textPrimary
-                        ),
-                        list = MaterialTheme.typography.bodyMedium.copy(
-                            fontFamily = InterFont,
-                            fontSize = 16.sp,
-                            color = colors.textPrimary
-                        )
-                    )
                 )
             }
 
-            // Action toolbar - only show when complete
             if (responseStatus == ResponseStatus.COMPLETE && message.content.isNotBlank()) {
                 MessageActionToolbar(
                     messageContent = message.content,
                     context = context,
                     colors = colors,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
         }
@@ -414,14 +397,13 @@ private fun MessageActionToolbar(
     messageContent: String,
     context: Context,
     colors: com.localgrok.ui.theme.LocalGrokColors,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Copy button
         IconButton(
             onClick = {
                 val clipboardManager =
@@ -429,34 +411,34 @@ private fun MessageActionToolbar(
                 val clip = ClipData.newPlainText("AI Response", messageContent)
                 clipboardManager.setPrimaryClip(clip)
             },
-            modifier = Modifier.size(36.dp)
+            modifier = Modifier.size(36.dp),
         ) {
             Icon(
                 imageVector = Icons.Outlined.ContentCopy,
                 contentDescription = "Copy message",
                 tint = colors.textDim,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        // Share button
         IconButton(
             onClick = {
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, messageContent)
-                }
+                val shareIntent =
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, messageContent)
+                    }
                 context.startActivity(Intent.createChooser(shareIntent, "Share response"))
             },
-            modifier = Modifier.size(36.dp)
+            modifier = Modifier.size(36.dp),
         ) {
             Icon(
                 imageVector = Icons.Outlined.Share,
                 contentDescription = "Share message",
                 tint = colors.textDim,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
         }
     }

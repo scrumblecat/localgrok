@@ -66,7 +66,7 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val appTheme by viewModel.appTheme.collectAsState()
@@ -74,24 +74,16 @@ fun SettingsScreen(
     val portFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
-    // Theme-aware colors
     val colors = LocalAppColors.current
 
-    // Snackbar for toast messages
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Reload settings whenever the screen is shown to ensure fresh values
-    LaunchedEffect(Unit) {
-        viewModel.loadSettings()
-    }
+    LaunchedEffect(Unit) { viewModel.loadSettings() }
 
-    // State for unsaved changes dialog
     var showUnsavedDialog by remember { mutableStateOf(false) }
 
-    // Debounce state to prevent rapid back button clicks
     var isBackNavigating by remember { mutableStateOf(false) }
 
-    // Handle back press with unsaved changes check and debounce
     val handleBack: () -> Unit = {
         if (!isBackNavigating) {
             if (viewModel.hasUnsavedChanges()) {
@@ -103,9 +95,7 @@ fun SettingsScreen(
         }
     }
 
-    BackHandler {
-        handleBack()
-    }
+    BackHandler { handleBack() }
 
     Scaffold(
         topBar = {
@@ -116,7 +106,7 @@ fun SettingsScreen(
                         fontFamily = InterFont,
                         fontWeight = FontWeight.Medium,
                         fontSize = 18.sp,
-                        color = colors.textPrimary
+                        color = colors.textPrimary,
                     )
                 },
                 navigationIcon = {
@@ -124,32 +114,27 @@ fun SettingsScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = colors.textPrimary
+                            tint = colors.textPrimary,
                         )
                     }
                 },
                 actions = {
-                    // Save button - enabled only when isDirty
                     Text(
                         text = "Save",
                         fontFamily = InterFont,
                         fontWeight = FontWeight.Medium,
                         fontSize = 16.sp,
                         color = if (uiState.isDirty) colors.accent else colors.textDim,
-                        modifier = Modifier
-                            .clickable(enabled = uiState.isDirty) {
-                                viewModel.saveSettings { message ->
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(message)
+                        modifier =
+                            Modifier.clickable(enabled = uiState.isDirty) {
+                                    viewModel.saveSettings { message ->
+                                        scope.launch { snackbarHostState.showSnackbar(message) }
                                     }
                                 }
-                            }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colors.background
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colors.background),
             )
         },
         containerColor = colors.background,
@@ -160,30 +145,24 @@ fun SettingsScreen(
                     Snackbar(
                         snackbarData = data,
                         containerColor = colors.darkGrey,
-                        contentColor = colors.textPrimary
+                        contentColor = colors.textPrimary,
                     )
-                }
+                },
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                modifier =
+                    Modifier.fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
             ) {
-                // Section: Server Configuration
                 SectionHeader(title = "SERVER")
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Server IP Input
                 GrokTextField(
                     label = "Server IP Address",
                     value = uiState.serverIp,
@@ -191,12 +170,11 @@ fun SettingsScreen(
                     placeholder = "127.0.0.1",
                     keyboardType = KeyboardType.Uri,
                     imeAction = ImeAction.Next,
-                    onImeAction = { portFocusRequester.requestFocus() }
+                    onImeAction = { portFocusRequester.requestFocus() },
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Server Port Input
                 GrokTextField(
                     label = "Ollama Port",
                     value = uiState.serverPort,
@@ -204,13 +182,12 @@ fun SettingsScreen(
                     placeholder = "11434",
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Next,
-                    onImeAction = { /* Focus next field */ },
-                    focusRequester = portFocusRequester
+                    onImeAction = {},
+                    focusRequester = portFocusRequester,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // SearXNG Port Input (for web search)
                 GrokTextField(
                     label = "SearXNG Port (Web Search)",
                     value = uiState.searxngPort,
@@ -218,21 +195,21 @@ fun SettingsScreen(
                     placeholder = "8080",
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done,
-                    onImeAction = { focusManager.clearFocus() }
+                    onImeAction = { focusManager.clearFocus() },
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "SearXNG provides web search capabilities. Uses same server IP as Ollama.",
+                    text =
+                        "SearXNG provides web search capabilities. Uses same server IP as Ollama.",
                     fontFamily = InterFont,
                     fontSize = 12.sp,
-                    color = colors.textSubtle
+                    color = colors.textSubtle,
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Section: Appearance
                 SectionHeader(title = "APPEARANCE")
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -241,35 +218,33 @@ fun SettingsScreen(
                     text = "Theme",
                     fontFamily = InterFont,
                     fontSize = 13.sp,
-                    color = colors.textSecondary
+                    color = colors.textSecondary,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Theme Toggle
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     ThemeOptionButton(
                         label = "Dark",
                         isSelected = appTheme == AppTheme.DARK,
                         onClick = { viewModel.setAppTheme(AppTheme.DARK) },
                         colors = colors,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                     ThemeOptionButton(
                         label = "Space",
                         isSelected = appTheme == AppTheme.SPACE,
                         onClick = { viewModel.setAppTheme(AppTheme.SPACE) },
                         colors = colors,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
                     )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Section: About
                 SectionHeader(title = "ABOUT")
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -279,21 +254,21 @@ fun SettingsScreen(
                     fontFamily = InterFont,
                     fontWeight = FontWeight.Medium,
                     fontSize = 15.sp,
-                    color = colors.textPrimary
+                    color = colors.textPrimary,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Privacy-focused AI client for local LLM servers",
                     fontFamily = InterFont,
                     fontSize = 14.sp,
-                    color = colors.textSecondary
+                    color = colors.textSecondary,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Your conversations never leave your local network.",
                     fontFamily = InterFont,
                     fontSize = 13.sp,
-                    color = colors.textSubtle
+                    color = colors.textSubtle,
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -302,27 +277,25 @@ fun SettingsScreen(
                     text = "Made with ❤️ by Scrumble",
                     fontFamily = InterFont,
                     fontSize = 13.sp,
-                    color = colors.textSubtle
+                    color = colors.textSubtle,
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                modifier =
+                    Modifier.align(Alignment.TopCenter).padding(horizontal = 20.dp, vertical = 8.dp),
             ) { snackbarData ->
                 Snackbar(
                     snackbarData = snackbarData,
                     containerColor = colors.darkGrey,
                     contentColor = colors.textPrimary,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
                 )
             }
         }
 
-        // Unsaved changes dialog
         if (showUnsavedDialog) {
             AlertDialog(
                 onDismissRequest = { showUnsavedDialog = false },
@@ -332,14 +305,14 @@ fun SettingsScreen(
                         text = "Unsaved Changes",
                         fontFamily = InterFont,
                         fontWeight = FontWeight.Medium,
-                        color = colors.textPrimary
+                        color = colors.textPrimary,
                     )
                 },
                 text = {
                     Text(
                         text = "You have unsaved changes. Do you want to discard them?",
                         fontFamily = InterFont,
-                        color = colors.textSecondary
+                        color = colors.textSecondary,
                     )
                 },
                 confirmButton = {
@@ -353,34 +326,25 @@ fun SettingsScreen(
                             }
                         }
                     ) {
-                        Text(
-                            text = "Discard",
-                            fontFamily = InterFont,
-                            color = colors.error
-                        )
+                        Text(text = "Discard", fontFamily = InterFont, color = colors.error)
                     }
                 },
                 dismissButton = {
-                    TextButton(
-                        onClick = { showUnsavedDialog = false }
-                    ) {
+                    TextButton(onClick = { showUnsavedDialog = false }) {
                         Text(
                             text = "Keep Editing",
                             fontFamily = InterFont,
-                            color = colors.textPrimary
+                            color = colors.textPrimary,
                         )
                     }
-                }
+                },
             )
         }
     }
 }
 
 @Composable
-fun SectionHeader(
-    title: String,
-    modifier: Modifier = Modifier
-) {
+fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     val colors = LocalAppColors.current
     Text(
         text = title,
@@ -389,7 +353,7 @@ fun SectionHeader(
         fontSize = 11.sp,
         color = colors.textSubtle,
         letterSpacing = 2.5.sp,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -399,35 +363,37 @@ fun ThemeOptionButton(
     isSelected: Boolean,
     onClick: () -> Unit,
     colors: com.localgrok.ui.theme.LocalGrokColors,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val backgroundColor = if (isSelected) colors.lightGrey else colors.darkGrey
-    val borderColor = if (isSelected) {
-        Color.White
-    } else {
-        colors.borderGrey.copy(alpha = 0.5f)
-    }
+    val borderColor =
+        if (isSelected) {
+            Color.White
+        } else {
+            colors.borderGrey.copy(alpha = 0.5f)
+        }
     val textColor = if (isSelected) colors.textPrimary else colors.textSecondary
 
     Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 14.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(backgroundColor)
+                .border(
+                    width = if (isSelected) 1.5.dp else 1.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .clickable(onClick = onClick)
+                .padding(vertical = 14.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
             fontFamily = InterFont,
             fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
             fontSize = 14.sp,
-            color = textColor
+            color = textColor,
         )
     }
 }
@@ -442,58 +408,52 @@ fun GrokTextField(
     imeAction: ImeAction = ImeAction.Done,
     onImeAction: () -> Unit = {},
     focusRequester: FocusRequester? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colors = LocalAppColors.current
     Column(modifier = modifier) {
-        Text(
-            text = label,
-            fontFamily = InterFont,
-            fontSize = 13.sp,
-            color = colors.textSecondary
-        )
+        Text(text = label, fontFamily = InterFont, fontSize = 13.sp, color = colors.textSecondary)
         Spacer(modifier = Modifier.height(8.dp))
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = colors.textPrimary,
-                fontFamily = InterFont,
-                fontSize = 15.sp
-            ),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = colors.textPrimary,
+                    fontFamily = InterFont,
+                    fontSize = 15.sp,
+                ),
             cursorBrush = SolidColor(colors.textPrimary),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = keyboardType,
-                imeAction = imeAction
-            ),
-            keyboardActions = KeyboardActions(
-                onAny = { onImeAction() }
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                .clip(RoundedCornerShape(12.dp))
-                .background(colors.darkGrey)
-                .border(
-                    width = 1.dp,
-                    color = if (value.isNotEmpty()) colors.borderGrey else colors.borderGrey.copy(
-                        alpha = 0.5f
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = imeAction),
+            keyboardActions = KeyboardActions(onAny = { onImeAction() }),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .then(
+                        if (focusRequester != null) Modifier.focusRequester(focusRequester)
+                        else Modifier
+                    )
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.darkGrey)
+                    .border(
+                        width = 1.dp,
+                        color =
+                            if (value.isNotEmpty()) colors.borderGrey
+                            else colors.borderGrey.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(12.dp),
+                    )
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
             decorationBox = { innerTextField ->
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,
                         fontFamily = InterFont,
                         fontSize = 15.sp,
-                        color = colors.textDim
+                        color = colors.textDim,
                     )
                 }
                 innerTextField()
-            }
+            },
         )
     }
 }

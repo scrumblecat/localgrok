@@ -1,189 +1,118 @@
 # localgrok
 
-<div align="center">
+An Android app for chatting with Ollama on your own server.
 
-**A privacy-focused Android client for local LLM servers running Ollama**
+## What is this?
 
-*Your conversations never leave your local network* 🔒
+localgrok connects your phone to an Ollama server, streams replies as they're generated, and saves your chats on your phone. You can switch models, browse your history, and choose between two dark themes.
 
-[![Android](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://www.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-blue.svg)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Jetpack%20Compose-Latest-orange.svg)](https://developer.android.com/jetpack/compose)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
-</div>
-
----
-
-## Features
-
-### 🔐 Privacy & Security
-- **100% Local Network**: All communication stays on your local network - no data ever leaves your devices or network
-- **Offline-First**: Full functionality works without internet connection once configured
-- **Local Storage**: All conversations saved locally using Room database with automatic persistence
-
-### 💬 Chat Experience
-- **Real-Time Streaming**: See AI responses appear token-by-token in real-time for instant feedback
-- **Multiple Chat Sessions**: Create, manage, and switch between unlimited conversation threads
-- **Markdown Rendering**: Beautifully formatted responses with full Markdown support including code blocks, lists, and formatting
-- **Chat History**: Persistent chat history with automatic title generation from the first message
-
-### 🧠 AI Capabilities
-- **Model Selection**: Choose from any model available on your Ollama server (llama, qwen, mistral, etc.)
-- **Reasoning Mode**: Enable "thinking" mode for models that support it - see the AI's reasoning process (toggle with 💡 icon)
-- **Tool Calling**: Optional web search integration via SearXNG for real-time information when needed
-- **Smart System Prompts**: Intelligent system prompts that automatically adapt based on enabled features
-
-### 🎨 User Interface
-- **Multiple Themes**: Choose between Space (near-black) and Dark (grey) themes
-- **Modern Design**: Clean, terminal-inspired aesthetic with Material 3 components
-- **Custom Typography**: JetBrains Mono and Space Grotesk fonts for a distinctive, professional look
-- **Edge-to-Edge**: Immersive full-screen experience that adapts to your device
-- **Responsive Layout**: Optimized for all Android screen sizes from phones to tablets
-
-## Usage
-
-### Basic Chat
-
-1. **Start a New Chat**: Tap the menu icon (☰) to open the sidebar, then tap "New Chat"
-2. **Send Messages**: Type your message in the input field and tap send (or press Enter)
-3. **View Responses**: Responses stream in real-time as the AI generates them
-
-### Advanced Features
-
-#### Brain Toggle (💡)
-Toggle the lightbulb icon to enable/disable:
-- **Enabled**: AI can use reasoning mode (shows thinking process) and web search tools
-- **Disabled**: Standard chat mode without tools or reasoning
-
-#### Model Selection
-- Tap the model name in the input bar to see available models
-- Select a different model for each chat session
-- Your model preference is saved automatically
-
-#### Multiple Chats
-- Swipe right or tap the menu icon (☰) to access your chat list
-- Tap any chat to resume the conversation
-- Long-press a chat to delete it
-- Use "Delete All" in settings to clear all chats
-
-#### Themes
-- Access settings via the gear icon
-- Choose between **Space** (near-black, default) and **Dark** (grey) themes
-- Theme preference is saved automatically
-
-See [SETUP.md](SETUP.md) for more detailed usage instructions.
+With SearXNG set up, the Think model can also search the web.
 
 ## Screenshots
 
-<div align="center">
+| Chat | Chat history |
+| --- | --- |
+| <img src="docs/screenshots/chat.jpeg" alt="A chat with an expandable thinking section" width="240"> | <img src="docs/screenshots/chat-history.jpeg" alt="The sidebar with saved conversations" width="240"> |
 
-<img src="docs/screenshots/1.jpeg" alt="Main chat interface with reasoning mode" width="180"/> <img src="docs/screenshots/2.jpeg" alt="Chat list sidebar" width="180"/> <img src="docs/screenshots/3.jpeg" alt="Settings screen" width="180"/> <img src="docs/screenshots/4.jpeg" alt="Web search tool with reasoning mode" width="180"/>
+| Settings | Web search |
+| --- | --- |
+| <img src="docs/screenshots/settings.jpeg" alt="Server address, ports, and theme settings" width="240"> | <img src="docs/screenshots/web-search.jpeg" alt="A response after searching the web" width="240"> |
 
-</div>
+Screenshots show an earlier version, so some labels may differ.
 
-## Requirements
+## How do I run it?
 
-- **Android**: 8.0 (API 26) or higher
-- **Ollama Server**: Running on your local network (see setup below)
-- **Network**: Both devices (Android phone and server) must be on the same Wi-Fi network
-- **SearXNG** (Optional): For web search capabilities when brain toggle is enabled
+You'll need an Android phone running Android 8.0 or newer and a computer running [Ollama](https://ollama.com). Keep both devices on the same trusted network.
 
-## Quick Start
+### Set up Ollama
 
-### 1. Setup Fonts
+Download at least one model on your computer:
 
-The app requires custom fonts. Run the provided script:
-
-```bash
-cd scripts
-chmod +x download_fonts.sh
-./download_fonts.sh
+```sh
+ollama pull gemma3:1b-it-qat
 ```
 
-See [SETUP.md](SETUP.md) for manual font installation instructions.
+To use the app's Think mode, also download:
 
-### 2. Setup Ollama Server
-
-On your server machine (PC, Mac, or Linux):
-
-```bash
-# Install Ollama
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Pull a model
-ollama pull llama3.2
-
-# Start Ollama with network access (required!)
-OLLAMA_HOST=0.0.0.0 ollama serve
+```sh
+ollama pull qwen3:1.7b
 ```
 
-> **⚠️ Important**: By default, Ollama only listens on localhost. You must set `OLLAMA_HOST=0.0.0.0` to allow connections from other devices.
+Ollama needs to accept connections from your phone. Set `OLLAMA_HOST` to `0.0.0.0:11434` and restart Ollama. The [Ollama setup guide](https://docs.ollama.com/faq#how-do-i-configure-ollama-server) explains how to do this on Windows, macOS, and Linux.
 
-### 3. Configure the App
+Allow connections to port `11434` through your computer's firewall on your trusted network. Keep this unauthenticated server off the public internet.
 
-1. Open **localgrok** on your Android device
-2. Tap the **Settings** icon (⚙️) in the top right
-3. Enter your server IP address (find it with `ip addr` or `ifconfig` on Linux/Mac)
-4. Port should be `11434` (default Ollama port)
-5. Tap **"Test Connection"** to verify
-6. Tap **"Save Settings"**
+### Build the Android app
 
-See [SETUP.md](SETUP.md) for detailed setup instructions including SearXNG configuration.
+Open this project in a recent Android Studio that supports Android Gradle Plugin 8.13. Let Gradle finish syncing, then use **Run** to install it on your connected phone or emulator.
 
-## Building
+For a terminal build, use JDK 17 and Android SDK 35:
 
-### Prerequisites
-
-- **Android Studio**: Hedgehog (2023.1.1) or later
-- **JDK**: 17 or higher
-- **Android SDK**: API 35 (Android 15)
-- **Gradle**: 8.13.1 (included via wrapper)
-
-### Build Steps
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/localgrok.git
-cd localgrok
-
-# Download required fonts
-cd scripts && ./download_fonts.sh && cd ..
-
-# Build debug APK
+```sh
 ./gradlew assembleDebug
-
-# Install on connected device
-./gradlew installDebug
 ```
 
-The APK will be located at `app/build/outputs/apk/debug/app-debug.apk`.
+On Windows:
 
-### Opening in Android Studio
+```powershell
+.\gradlew.bat assembleDebug
+```
 
-1. Open Android Studio
-2. Select **File → Open**
-3. Navigate to the `localgrok` directory
-4. Wait for Gradle sync to complete
-5. Run the app with **Shift+F10** or the Run button
+The APK is saved to `app/build/outputs/apk/debug/app-debug.apk`. The fonts are already included; there's nothing extra to download for them.
 
-## Documentation
+### Connect your phone
 
-- **[SETUP.md](SETUP.md)** - Detailed setup, configuration, and usage guide
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Project architecture, tech stack, and design patterns
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guidelines for contributors
+1. Open the app and go to **Settings**.
+2. Enter your computer's local IP address or hostname, without `http://` or a port.
+3. Use port `11434` for Ollama, then tap **Save**.
+4. Return to the chat and choose one of the models on your server.
 
-## License
+Type a message and send it. Tap **Stop** to stop a response. Open the sidebar to start another chat or return to an existing one.
 
-MIT License - see [LICENSE](LICENSE) file for details.
+## How does web search work?
 
----
+Run [SearXNG](https://docs.searxng.org/admin/installation.html) on the same computer as Ollama and enter its port in Settings. The app defaults to `8888`; change it if your instance uses another port.
 
-<div align="center">
+Enable JSON results in SearXNG's `settings.yml`:
 
-**localgrok** - Privacy-first AI on your local network 🔒
+```yaml
+search:
+  formats:
+    - html
+    - json
+```
 
-Made with ❤️ for the privacy-conscious
+Choose **Think** (`qwen3:1.7b`) in the model picker. It can request a search when your question needs current information. Search depends on the model following the tool format and isn't guaranteed for every question.
 
-</div>
+## Where does my data go?
+
+Chats and settings are stored on your phone, and Android backups are disabled for them. Messages are sent to the Ollama server you configure. Using a local model keeps generation on that server; a cloud-backed model can send data elsewhere.
+
+Web searches send queries to your SearXNG instance, which contacts search engines. Connections from the app use HTTP, so use a network you trust.
+
+## Something isn't working
+
+- **Can't connect:** Check the server address, Wi-Fi network, firewall, and Ollama's `OLLAMA_HOST` setting.
+- **No models appear:** Run `ollama list` on your computer and make sure a model is installed.
+- **Search fails:** Check the SearXNG port and make sure JSON results are enabled. Public instances may block API requests.
+- **A reply stops early:** The app will show an error. Check the server and try again; partial text is kept.
+
+The Imagine tab is a placeholder. Image generation is not available.
+
+## Development
+
+Run the unit tests with:
+
+```sh
+./gradlew testDebugUnitTest
+```
+
+Use `gradlew.bat` instead on Windows. The tests use sample responses and don't need an Ollama server.
+
+## Credits and license
+
+Built with Kotlin, Jetpack Compose, Ollama, and optional SearXNG search. Font credits and licenses are in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md).
+
+Cleanup and documentation updates were assisted by Codex, OpenAI's AI coding assistant.
+
+Released under the [MIT License](LICENSE).

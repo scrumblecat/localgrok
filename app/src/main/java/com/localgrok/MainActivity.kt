@@ -23,24 +23,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Enable edge-to-edge display
+
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Get application instance
         val app = application as LocalGrokApplication
 
-        // Create ViewModels with factory
         val viewModelFactory = viewModelFactory {
             initializer {
                 ChatViewModel(
                     chatRepository = app.chatRepository,
-                    settingsRepository = app.settingsRepository
+                    settingsRepository = app.settingsRepository,
                 )
             }
             initializer {
                 SettingsViewModel(
                     settingsRepository = app.settingsRepository,
-                    chatRepository = app.chatRepository
+                    chatRepository = app.chatRepository,
                 )
             }
         }
@@ -55,10 +53,9 @@ class MainActivity : ComponentActivity() {
                 LocalGrokNavHost(
                     chatViewModel = chatViewModel,
                     settingsViewModel = settingsViewModel,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
         }
     }
 }
-

@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -58,27 +61,32 @@ data class ModelOption(
     val displayName: String,
     val subtitle: String,
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val modelId: String
+    val modelId: String,
 )
 
-val MODEL_OPTIONS = listOf(
-    ModelOption(
-        id = "standard",
-        displayName = "Flash",
-        subtitle = "Instant chat",
-        icon = Icons.Outlined.DarkMode,
-        modelId = "gemma3:1b-it-qat"
-    ),
-    ModelOption(
-        id = "reasoning",
-        displayName = "Think",
-        subtitle = "Tools & deep thinking",
-        icon = Icons.Default.RocketLaunch,
-        modelId = "qwen3:1.7b"
+val MODEL_OPTIONS =
+    listOf(
+        ModelOption(
+            id = "standard",
+            displayName = "Flash",
+            subtitle = "Instant chat",
+            icon = Icons.Outlined.DarkMode,
+            modelId = "gemma3:1b-it-qat",
+        ),
+        ModelOption(
+            id = "reasoning",
+            displayName = "Think",
+            subtitle = "Tools & deep thinking",
+            icon = Icons.Default.RocketLaunch,
+            modelId = "qwen3:1.7b",
+        ),
     )
-)
 
 val DEFAULT_MODEL = MODEL_OPTIONS.first()
+
+fun modelOption(modelId: String): ModelOption =
+    MODEL_OPTIONS.find { it.modelId == modelId }
+        ?: ModelOption(modelId, modelId, "Ollama model", Icons.Outlined.DarkMode, modelId)
 
 @Composable
 fun UnifiedInputBar(
@@ -87,111 +95,101 @@ fun UnifiedInputBar(
     onSend: () -> Unit,
     onStop: () -> Unit = {},
     selectedModel: ModelOption,
+    availableModels: List<String> = emptyList(),
     onModelSelected: (ModelOption) -> Unit,
     isGenerating: Boolean = false,
     enabled: Boolean = true,
     colors: LocalGrokColors = LocalAppColors.current,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var showModelDropdown by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val interactionSource = remember { MutableInteractionSource() }
 
-    // Outer container - padding only, no background
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(top = 8.dp, bottom = 16.dp)
+        modifier =
+            modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(top = 8.dp, bottom = 16.dp)
     ) {
-        // Content with rounded corners, background, and border
-        // Tapping anywhere in this capsule focuses the text field
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .background(colors.inputBackground)
-                .border(
-                    width = 1.dp,
-                    color = colors.inputBorder,
-                    shape = RoundedCornerShape(24.dp)
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null // No ripple effect
-                ) {
-                    focusRequester.requestFocus()
-                }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier =
+                Modifier.fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(colors.inputBackground)
+                    .border(
+                        width = 1.dp,
+                        color = colors.inputBorder,
+                        shape = RoundedCornerShape(24.dp),
+                    )
+                    .clickable(interactionSource = interactionSource, indication = null) {
+                        focusRequester.requestFocus()
+                    }
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Text input field - takes flexible space
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 enabled = enabled,
                 singleLine = false,
                 maxLines = 6,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    color = colors.textPrimary,
-                    fontFamily = InterFont,
-                    fontSize = 16.sp
-                ),
-                // Hide cursor when empty (so it doesn't show "| Ask anything"), show when typing
-                cursorBrush = if (value.isEmpty()) SolidColor(Color.Transparent) else SolidColor(
-                    colors.textPrimary
-                ),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Send
-                ),
-                keyboardActions = KeyboardActions(
-                    onSend = {
-                        if (value.isNotBlank() && enabled) {
-                            onSend()
+                textStyle =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        color = colors.textPrimary,
+                        fontFamily = InterFont,
+                        fontSize = 16.sp,
+                    ),
+                cursorBrush =
+                    if (value.isEmpty()) SolidColor(Color.Transparent)
+                    else SolidColor(colors.textPrimary),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions =
+                    KeyboardActions(
+                        onSend = {
+                            if (value.isNotBlank() && enabled) {
+                                onSend()
+                            }
                         }
-                    }
-                ),
-                modifier = Modifier
-                    .weight(1f)
-                    .defaultMinSize(minHeight = 24.dp) // Compact single-line height
-                    .focusRequester(focusRequester),
+                    ),
+                modifier =
+                    Modifier.weight(1f)
+                        .defaultMinSize(minHeight = 24.dp)
+                        .focusRequester(focusRequester),
                 decorationBox = { innerTextField ->
-                    Box(
-                        contentAlignment = Alignment.CenterStart
-                    ) {
+                    Box(contentAlignment = Alignment.CenterStart) {
                         if (value.isEmpty()) {
                             Text(
                                 text = "Ask anything",
                                 fontFamily = InterFont,
                                 fontSize = 16.sp,
-                                color = colors.textSubtle
+                                color = colors.textSubtle,
                             )
                         }
                         innerTextField()
                     }
-                }
+                },
             )
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Model Selector Pill with Dropdown
             val density = LocalDensity.current
 
             Box {
                 Row(
-                    modifier = Modifier
-                        .height(36.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(colors.mediumGrey)
-                        .clickable { showModelDropdown = true }
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier =
+                        Modifier.height(36.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(colors.mediumGrey)
+                            .clickable(enabled = !isGenerating && availableModels.isNotEmpty()) {
+                                showModelDropdown = true
+                            }
+                            .padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = selectedModel.icon,
                         contentDescription = null,
                         tint = colors.textPrimary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -199,69 +197,70 @@ fun UnifiedInputBar(
                         fontFamily = InterFont,
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
-                        color = colors.textPrimary
+                        color = colors.textPrimary,
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         tint = colors.textSecondary,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(16.dp),
                     )
                 }
 
-                // Floating Dropdown Menu - positioned above the pill
                 if (showModelDropdown) {
                     ModelSelectorDropdown(
                         onDismissRequest = { showModelDropdown = false },
                         selectedModel = selectedModel,
+                        models = availableModels.map(::modelOption),
                         onModelSelected = { model ->
                             onModelSelected(model)
                             showModelDropdown = false
                         },
                         density = density,
-                        colors = colors
+                        colors = colors,
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Send/Stop Button
             if (isGenerating) {
-                // Stop Button - shown while generating
+
                 Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(colors.error)
-                        .clickable { onStop() },
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier.size(36.dp).clip(CircleShape).background(colors.error).clickable {
+                            onStop()
+                        },
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Default.Stop,
                         contentDescription = "Stop generation",
                         tint = Color.White,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             } else {
-                // Send Button - shown when not generating
+
                 Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (value.isNotBlank() && enabled) colors.textPrimary else colors.mediumGrey
-                        )
-                        .clickable(enabled = value.isNotBlank() && enabled) { onSend() },
-                    contentAlignment = Alignment.Center
+                    modifier =
+                        Modifier.size(36.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (value.isNotBlank() && enabled) colors.textPrimary
+                                else colors.mediumGrey
+                            )
+                            .clickable(enabled = value.isNotBlank() && enabled) { onSend() },
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
-                        tint = if (value.isNotBlank() && enabled) colors.background else colors.textDim,
-                        modifier = Modifier.size(18.dp)
+                        tint =
+                            if (value.isNotBlank() && enabled) colors.background
+                            else colors.textDim,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
@@ -273,49 +272,49 @@ fun UnifiedInputBar(
 fun ModelSelectorDropdown(
     onDismissRequest: () -> Unit,
     selectedModel: ModelOption,
+    models: List<ModelOption>,
     onModelSelected: (ModelOption) -> Unit,
     density: androidx.compose.ui.unit.Density,
-    colors: LocalGrokColors = LocalAppColors.current
+    colors: LocalGrokColors = LocalAppColors.current,
 ) {
-    // Menu height estimate: ~60dp per item * 2 items + padding
-    val menuHeight = with(density) { 130.dp.roundToPx() }
-    // Gap to clear the input bar and provide visual separation
+
+    val menuHeight = with(density) { (models.size * 56 + 16).coerceAtMost(320).dp.roundToPx() }
+
     val inputBarOffset = with(density) { 60.dp.roundToPx() }
 
     Popup(
         onDismissRequest = onDismissRequest,
         alignment = Alignment.TopEnd,
-        // Position above the entire input bar: menuHeight + extra offset to clear text field
-        offset = IntOffset(
-            x = 0,
-            y = -(menuHeight + inputBarOffset)
-        ),
-        properties = PopupProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true,
-            focusable = true
-        )
+        offset = IntOffset(x = 0, y = -(menuHeight + inputBarOffset)),
+        properties =
+            PopupProperties(
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                focusable = true,
+            ),
     ) {
         Column(
-            modifier = Modifier
-                .width(220.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(colors.darkGrey)
-                .padding(vertical = 8.dp)
+            modifier =
+                Modifier.width(260.dp)
+                    .heightIn(max = 320.dp)
+                    .verticalScroll(rememberScrollState())
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(colors.darkGrey)
+                    .padding(vertical = 8.dp)
         ) {
-            MODEL_OPTIONS.forEachIndexed { index, model ->
+            models.forEachIndexed { index, model ->
                 ModelDropdownItem(
                     model = model,
                     isSelected = model.id == selectedModel.id,
                     onClick = { onModelSelected(model) },
-                    colors = colors
+                    colors = colors,
                 )
 
-                if (index < MODEL_OPTIONS.size - 1) {
+                if (index < models.size - 1) {
                     HorizontalDivider(
                         color = colors.borderGrey.copy(alpha = 0.3f),
                         thickness = 0.5.dp,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
             }
@@ -329,33 +328,32 @@ private fun ModelDropdownItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     colors: LocalGrokColors,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Icon - consistent 22dp size for all icons
         Icon(
             imageVector = model.icon,
             contentDescription = null,
             tint = colors.textPrimary,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(22.dp),
         )
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Title and subtitle
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = model.displayName,
                 fontFamily = InterFont,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
                 fontSize = 15.sp,
-                color = colors.textPrimary
+                color = colors.textPrimary,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -363,7 +361,7 @@ private fun ModelDropdownItem(
                 fontFamily = InterFont,
                 fontWeight = FontWeight.Normal,
                 fontSize = 13.sp,
-                color = colors.textSecondary
+                color = colors.textSecondary,
             )
         }
     }

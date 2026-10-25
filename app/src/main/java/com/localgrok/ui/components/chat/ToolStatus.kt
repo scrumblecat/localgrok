@@ -27,83 +27,77 @@ import androidx.compose.ui.unit.dp
 import com.localgrok.ui.theme.LocalAppColors
 import com.localgrok.ui.theme.LocalGrokColors
 
-/**
- * Content-aware indicator for tool execution.
- * Displays specific icons and labels based on the tool being executed.
- * Supports both active (animated) and completed (static past tense) states.
- */
 @Composable
 fun ToolExecutionIndicator(
     displayText: String,
     isCompleted: Boolean = false,
     colors: LocalGrokColors = LocalAppColors.current,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "tool_pulse")
 
-    // Pulse animation only when actively executing
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "tool_alpha"
-    )
+    val alpha by
+        infiniteTransition.animateFloat(
+            initialValue = 0.6f,
+            targetValue = 1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+            label = "tool_alpha",
+        )
 
-    // Determine icon and label based on displayText content and completion state
-    val (icon, label) = when {
-        displayText.contains("Search", ignoreCase = true) -> {
-            val text = if (isCompleted) "Searched the web" else "Searching the web..."
-            Pair(Icons.Rounded.Search, text)
-        }
+    val (icon, label) =
+        when {
+            displayText.contains("Search", ignoreCase = true) -> {
+                val text = if (isCompleted) "Searched the web" else "Searching the web..."
+                Pair(Icons.Rounded.Search, text)
+            }
 
-        displayText.contains("time", ignoreCase = true) ||
+            displayText.contains("time", ignoreCase = true) ||
                 displayText.contains("date", ignoreCase = true) ||
                 displayText.contains("calendar", ignoreCase = true) -> {
-            val text = if (isCompleted) "Checked calendar" else "Checking calendar..."
-            Pair(Icons.Rounded.Schedule, text)
-        }
+                val text = if (isCompleted) "Checked calendar" else "Checking calendar..."
+                Pair(Icons.Rounded.Schedule, text)
+            }
 
-        else -> {
-            val text = if (isCompleted) "Completed" else "Working..."
-            Pair(Icons.Rounded.AutoAwesome, text)
+            else -> {
+                val text = if (isCompleted) "Completed" else "Working..."
+                Pair(Icons.Rounded.AutoAwesome, text)
+            }
         }
-    }
 
     Row(
         modifier = modifier.padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Content-aware icon (static, no rotation)
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = colors.textSecondary.copy(alpha = 0.7f),
-            modifier = Modifier
-                .size(16.dp)
-                .graphicsLayer {
-                    // Only animate alpha when actively executing
+            modifier =
+                Modifier.size(16.dp).graphicsLayer {
                     if (!isCompleted) {
                         this.alpha = alpha
                     }
-                }
+                },
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium.copy(
-                color = colors.textSecondary.copy(alpha = 0.7f)
-            ),
-            modifier = Modifier.graphicsLayer {
-                // Only animate alpha when actively executing
-                if (!isCompleted) {
-                    this.alpha = alpha
-                }
-            }
+            style =
+                MaterialTheme.typography.labelMedium.copy(
+                    color = colors.textSecondary.copy(alpha = 0.7f)
+                ),
+            modifier =
+                Modifier.graphicsLayer {
+                    if (!isCompleted) {
+                        this.alpha = alpha
+                    }
+                },
         )
     }
 }

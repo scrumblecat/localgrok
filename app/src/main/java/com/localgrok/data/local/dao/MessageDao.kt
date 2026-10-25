@@ -24,29 +24,33 @@ interface MessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: MessageEntity): Long
 
-    @Update
-    suspend fun updateMessage(message: MessageEntity)
+    @Update suspend fun updateMessage(message: MessageEntity)
 
-    @Delete
-    suspend fun deleteMessage(message: MessageEntity)
+    @Delete suspend fun deleteMessage(message: MessageEntity)
 
     @Query("DELETE FROM messages WHERE chatId = :chatId")
     suspend fun deleteMessagesForChat(chatId: Long)
 
-    @Query("UPDATE messages SET content = :content, isStreaming = :isStreaming WHERE id = :messageId")
+    @Query(
+        "UPDATE messages SET content = :content, isStreaming = :isStreaming WHERE id = :messageId"
+    )
     suspend fun updateMessageContent(messageId: Long, content: String, isStreaming: Boolean = false)
 
-    @Query("UPDATE messages SET content = :content, isStreaming = :isStreaming, isThinking = :isThinking, toolUsed = :toolUsed, toolDisplayName = :toolDisplayName WHERE id = :messageId")
+    @Query(
+        "UPDATE messages SET content = :content, isStreaming = :isStreaming, isThinking = :isThinking, toolUsed = :toolUsed, toolDisplayName = :toolDisplayName WHERE id = :messageId"
+    )
     suspend fun updateMessageState(
         messageId: Long,
         content: String,
         isStreaming: Boolean,
         isThinking: Boolean,
         toolUsed: Boolean,
-        toolDisplayName: String
+        toolDisplayName: String,
     )
 
-    @Query("UPDATE messages SET content = :content, isStreaming = :isStreaming, isThinking = :isThinking, reasoningContent = :reasoningContent, toolUsed = :toolUsed, toolDisplayName = :toolDisplayName WHERE id = :messageId")
+    @Query(
+        "UPDATE messages SET content = :content, isStreaming = :isStreaming, isThinking = :isThinking, reasoningContent = :reasoningContent, toolUsed = :toolUsed, toolDisplayName = :toolDisplayName WHERE id = :messageId"
+    )
     suspend fun updateMessageStateWithReasoning(
         messageId: Long,
         content: String,
@@ -54,7 +58,7 @@ interface MessageDao {
         isThinking: Boolean,
         reasoningContent: String,
         toolUsed: Boolean,
-        toolDisplayName: String
+        toolDisplayName: String,
     )
 
     @Query("UPDATE messages SET reasoningContent = :reasoningContent WHERE id = :messageId")
@@ -63,4 +67,3 @@ interface MessageDao {
     @Query("SELECT * FROM messages WHERE chatId = :chatId ORDER BY createdAt DESC LIMIT 1")
     suspend fun getLastMessageForChat(chatId: Long): MessageEntity?
 }
-

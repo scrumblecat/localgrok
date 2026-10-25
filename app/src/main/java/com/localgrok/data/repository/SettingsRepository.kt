@@ -4,19 +4,25 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.localgrok.ui.theme.AppTheme
+import java.io.IOException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "localgrok_settings")
+private val Context.dataStore: DataStore<Preferences> by
+    preferencesDataStore(name = "localgrok_settings")
 
-/**
- * Repository for managing user settings via DataStore
- */
 class SettingsRepository(private val context: Context) {
+
+    private val preferences =
+        context.dataStore.data.catch { error ->
+            if (error is IOException) emit(emptyPreferences()) else throw error
+        }
 
     companion object {
         private val SERVER_IP_KEY = stringPreferencesKey("server_ip")
@@ -26,109 +32,59 @@ class SettingsRepository(private val context: Context) {
         private val APP_THEME_KEY = stringPreferencesKey("app_theme")
 
         const val DEFAULT_PORT = 11434
-        const val DEFAULT_SEARXNG_PORT = 8080
+        const val DEFAULT_SEARXNG_PORT = 8888
         const val DEFAULT_MODEL = "gemma3:1b-it-qat"
     }
 
-    /**
-     * Get the server IP address
-     */
-    val serverIp: Flow<String> = context.dataStore.data.map { preferences ->
-        val ip = preferences[SERVER_IP_KEY]
-        // Treat empty strings as null to prevent crashes, default to loopback
-        if (ip.isNullOrBlank()) "127.0.0.1" else ip
-    }
+    val serverIp: Flow<String> =
+        preferences.map { preferences ->
+            val ip = preferences[SERVER_IP_KEY]
 
-    /**
-     * Get the server port
-     */
-    val serverPort: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[SERVER_PORT_KEY] ?: DEFAULT_PORT
-    }
-
-    /**
-     * Get the SearXNG port (runs on same server as Ollama)
-     */
-    val searxngPort: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[SEARXNG_PORT_KEY] ?: DEFAULT_SEARXNG_PORT
-    }
-
-    /**
-     * Get the default model name
-     */
-    val defaultModel: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[DEFAULT_MODEL_KEY] ?: DEFAULT_MODEL
-    }
-
-    /**
-     * Get the app theme
-     */
-    val appTheme: Flow<AppTheme> = context.dataStore.data.map { preferences ->
-        val themeName = preferences[APP_THEME_KEY] ?: AppTheme.DARK.name
-        try {
-            AppTheme.valueOf(themeName)
-        } catch (e: IllegalArgumentException) {
-            AppTheme.DARK
+            ip.orEmpty().trim()
         }
-    }
 
-    /**
-     * Save server IP address
-     */
-    suspend fun setServerIp(ip: String) {
-        context.dataStore.edit { preferences ->
-            // Store empty string as null to prevent crashes
-            if (ip.isBlank()) {
-                preferences.remove(SERVER_IP_KEY)
-            } else {
-                preferences[SERVER_IP_KEY] = ip.trim()
+    val serverPort: Flow<Int> =
+        preferences.map { preferences ->
+            preferences[SERVER_PORT_KEY]?.takeIf { it in 1..65535 } ?: DEFAULT_PORT
+        }
+
+    val searxngPort: Flow<Int> =
+        preferences.map { preferences ->
+            preferences[SEARXNG_PORT_KEY]?.takeIf { it in 1..65535 } ?: DEFAULT_SEARXNG_PORT
+        }
+
+    val defaultModel: Flow<String> =
+        preferences.map { preferences -> preferences[DEFAULT_MODEL_KEY] ?: DEFAULT_MODEL }
+
+    val appTheme: Flow<AppTheme> =
+        preferences.map { preferences ->
+            val themeName = preferences[APP_THEME_KEY] ?: AppTheme.DARK.name
+            try {
+                AppTheme.valueOf(themeName)
+            } catch (e: IllegalArgumentException) {
+                AppTheme.DARK
             }
         }
-    }
 
-    /**
-     * Save server port
-     */
-    suspend fun setServerPort(port: Int) {
+    suspend fun setServerConfig(host: String, port: Int, searchPort: Int) {
+        com.localgrok.data.remote.ServerAddress.baseUrl(host, port)
+        com.localgrok.data.remote.ServerAddress.baseUrl(host, searchPort)
         context.dataStore.edit { preferences ->
+            preferences[SERVER_IP_KEY] = host.trim()
             preferences[SERVER_PORT_KEY] = port
+            preferences[SEARXNG_PORT_KEY] = searchPort
         }
     }
 
-    /**
-     * Save SearXNG port
-     */
-    suspend fun setSearxngPort(port: Int) {
-        context.dataStore.edit { preferences ->
-            preferences[SEARXNG_PORT_KEY] = port
-        }
-    }
-
-    /**
-     * Save default model
-     */
     suspend fun setDefaultModel(model: String) {
-        context.dataStore.edit { preferences ->
-            preferences[DEFAULT_MODEL_KEY] = model
-        }
+        context.dataStore.edit { preferences -> preferences[DEFAULT_MODEL_KEY] = model }
     }
 
-    /**
-     * Save app theme
-     */
     suspend fun setAppTheme(theme: AppTheme) {
-        context.dataStore.edit { preferences ->
-            preferences[APP_THEME_KEY] = theme.name
-        }
+        context.dataStore.edit { preferences -> preferences[APP_THEME_KEY] = theme.name }
     }
 
-    /**
-     * Clear all settings
-     */
     suspend fun clearSettings() {
-        context.dataStore.edit { preferences ->
-            preferences.clear()
-        }
+        context.dataStore.edit { preferences -> preferences.clear() }
     }
 }
-
